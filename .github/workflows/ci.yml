@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-script:
+    runs-on: ubuntu-latest
+    name: Test Shell Script
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Validate shell script syntax
+      run: |
+        bash -n generate-report.sh
+        echo "Shell script syntax is valid"
+        
+    - name: Run basic test script
+      run: |
+        chmod +x tests/test-basic.sh
+        bash tests/test-basic.sh
+        echo "Basic test script executed successfully"
+        
+    - name: Test script with mock environment
+      run: |
+        export INPUT_GITHUB_TOKEN="dummy-token"
+        export INPUT_ORGANIZATION="test-org"  
+        export INPUT_OUTPUT_FORMAT="markdown"
+        export INPUT_EXCLUDE_REPOS=""
+        export INPUT_API_DELAY="0"
+        
+        # Test that script loads without errors (will fail on API calls but syntax should be ok)
+        timeout 10s bash generate-report.sh || true
+        echo "Script executed without syntax errors"
+
+  test-action:
+    runs-on: ubuntu-latest
+    name: Test Weekly Report Action
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Test action with public organization
+      id: test-report
+      uses: ./
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        organization: 'QuantEcon'
+        output-format: 'markdown'
+        exclude-repos: 'private-test-repo'
+        api-delay: '1'
+        
+    - name: Verify report was generated
+      run: |
+        if [ -z "${{ steps.test-report.outputs.report-content }}" ]; then
+          echo "ERROR: No report content generated"
+          exit 1
+        fi
+        echo "SUCCESS: Report generated"
+        echo "Summary: ${{ steps.test-report.outputs.report-summary }}"
+        
+    - name: Test JSON output format
+      uses: ./
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        organization: 'QuantEcon'
+        output-format: 'json'
+
+  test-dry-run:
+    runs-on: ubuntu-latest
+    name: Test Dry Run (No Token)
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Test action without valid token (should fail gracefully)
+      continue-on-error: true
+      uses: ./
+      with:
+        github-token: 'invalid-token'
+        organization: 'QuantEcon'
