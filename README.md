@@ -33,7 +33,7 @@ This action generates a report containing:
 
 ```yaml
 - name: Generate weekly report
-  uses: QuantEcon/meta/.github/actions/weekly-report@main
+  uses: QuantEcon/action-weekly-report@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     organization: 'QuantEcon'
