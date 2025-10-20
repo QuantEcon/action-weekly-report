@@ -7,22 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-- **Floating version tag**: Added `v2` tag that automatically tracks the latest v2.x.x release
-  - Recommended usage: `uses: QuantEcon/action-weekly-report@v2`
-  - Always points to the latest stable v2.x.x version
-  - For version pinning, use specific tags like `@v2.1.0` or `@v2.0.0`
-  - Updated README examples to use `@v2` tag
-- **Output filename defaults**: Different defaults based on execution context
-  - GitHub Actions mode: `weekly-report.md` (backward compatible)
-  - CLI mode: `report.md` (cleaner for local development)
+## [2.1.1] - 2025-10-20
+
+### Fixed
+- **Backward compatibility for GitHub Actions**: Restored `weekly-report.md` as default output filename when running as GitHub Action
+  - Prevents breaking change for workflows expecting `weekly-report.md`
+  - CLI mode continues to use `report.md` for local development
+  - Auto-detects execution context (Action vs CLI)
   - Both modes support custom filename via `--output` flag
 
-### Added
+### Changed
 - **Enhanced debug output for exclusions**: Improved visibility into pattern matching
-  - Shows each exclude pattern being applied
+  - Shows each exclude pattern being applied (with count)
   - Displays which repositories matched which patterns
   - Shows repository count before and after filtering
+  - Better formatted output with visual indicators (✗ for excluded repos)
 
 ## [2.1.0] - 2025-10-20
 
