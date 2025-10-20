@@ -263,8 +263,9 @@ cat weekly-report.md
    EOF
    
    # Create release (redirect to temp file!)
+   # IMPORTANT: Use concise semantic version for title (e.g., "v2.1.2" not "v2.1.2 - Description")
    gh release create vX.Y.Z \
-     --title "vX.Y.Z - Release Title" \
+     --title "vX.Y.Z" \
      --notes-file /tmp/release-notes.md \
      --latest \
      > /tmp/release-output.txt 2>&1
@@ -274,6 +275,9 @@ cat weekly-report.md
    gh api repos/QuantEcon/action-weekly-report/releases/latest > /tmp/latest.json
    jq -r '.tag_name' /tmp/latest.json
    ```
+   
+   **Note:** Always use concise semantic version format for release titles (e.g., `v2.1.2`).
+   Descriptions go in the release notes body, not the title.
 
 5. **Update floating version tag (for v2.x.x releases)**
    ```bash
