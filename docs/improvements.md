@@ -262,7 +262,7 @@ The script can now be run as a standalone CLI tool:
 | `--start=DATE` | Start date (YYYY-MM-DD) | 7 days ago | `--start=2025-10-01` |
 | `--end=DATE` | End date (YYYY-MM-DD) | Today | `--end=2025-10-31` |
 | `--output=FILE` | Output filename | `report.md` | `--output=monthly.md` |
-| `--exclude=REPOS` | Comma-separated repos to exclude | None | `--exclude=repo1,repo2` |
+| `--exclude=REPOS` | Comma-separated repos or regex patterns to exclude | None | `--exclude="lecture-.*\.notebooks"` |
 | `--delay=SECONDS` | Delay between API calls | `0` | `--delay=1` |
 | `--help` | Show usage information | - | `--help` |
 
@@ -283,6 +283,9 @@ The script can now be run as a standalone CLI tool:
 
 # Exclude specific repos
 ./generate-report.sh --token=ghp_xxx --exclude=archived-repo,test-repo
+
+# Exclude repos using regex patterns (v2.1.0+)
+./generate-report.sh --token=ghp_xxx --exclude="lecture-.*\.notebooks,.*-archive"
 
 # With API delay (for rate limiting)
 ./generate-report.sh --token=ghp_xxx --delay=1
