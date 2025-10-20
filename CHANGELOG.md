@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Regex support for exclude-repos**: The `--exclude` option now supports regular expressions for flexible repository filtering
+  - Exact match: `--exclude=repo1,repo2`
+  - Regex patterns: `--exclude="lecture-.*\.notebooks,.*-archive"`
+  - Useful for excluding groups of repositories (e.g., all auto-generated `.notebooks` repos)
+
 ## [2.0.0] - 2025-10-20
 
 **MAJOR RELEASE** - Complete rewrite with comprehensive activity tracking, critical bug fixes, and CLI support

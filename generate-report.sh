@@ -20,7 +20,7 @@ OPTIONS:
     --start=YYYY-MM-DD   Start date for report (end date defaults to today)
     --end=YYYY-MM-DD     End date for report (requires --start)
     --output=FILE        Output filename (default: report.md)
-    --exclude=REPOS      Comma-separated list of repos to exclude
+    --exclude=REPOS      Comma-separated list of repos to exclude (supports regex patterns)
     --delay=SECONDS      Delay between API calls (default: 0)
     --help               Show this help message
 
@@ -39,6 +39,12 @@ EXAMPLES:
 
     # Custom output filename
     $0 --token=ghp_xxxxx --output=custom-report.md
+
+    # Exclude specific repositories
+    $0 --token=ghp_xxxxx --exclude=repo1,repo2
+
+    # Exclude repositories using regex patterns
+    $0 --token=ghp_xxxxx --exclude="lecture-.*\.notebooks,.*-archive"
 
 ENVIRONMENT VARIABLES:
     GITHUB_TOKEN or INPUT_GITHUB_TOKEN    GitHub token
@@ -326,19 +332,20 @@ echo "$repo_names" | head -10  # Show first 10 for logging
 
 # Filter out excluded repositories if any are specified
 if [ -n "$EXCLUDE_REPOS" ]; then
-    echo "Excluding repositories: $EXCLUDE_REPOS"
+    echo "Excluding repositories matching: $EXCLUDE_REPOS"
     # Convert comma-separated list to array and filter out excluded repos
     IFS=',' read -ra exclude_array <<< "$EXCLUDE_REPOS"
     filtered_repos=""
     while IFS= read -r repo; do
         [ -z "$repo" ] && continue
         excluded=false
-        for exclude_repo in "${exclude_array[@]}"; do
-            # Trim whitespace and compare
-            exclude_repo=$(echo "$exclude_repo" | xargs)
-            if [ "$repo" = "$exclude_repo" ]; then
+        for exclude_pattern in "${exclude_array[@]}"; do
+            # Trim whitespace
+            exclude_pattern=$(echo "$exclude_pattern" | xargs)
+            # Check if pattern matches using grep -E (extended regex)
+            if echo "$repo" | grep -qE "^${exclude_pattern}$"; then
                 excluded=true
-                echo "Excluding repository: $repo"
+                echo "Excluding repository: $repo (matched pattern: $exclude_pattern)"
                 break
             fi
         done

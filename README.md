@@ -71,6 +71,12 @@ export GITHUB_TOKEN=ghp_xxxxx
 # Custom output filename
 ./generate-report.sh --token=ghp_xxxxx --output=monthly-report.md
 
+# Exclude specific repositories
+./generate-report.sh --token=ghp_xxxxx --exclude=repo1,repo2
+
+# Exclude repositories using regex patterns (e.g., all .notebooks repos)
+./generate-report.sh --token=ghp_xxxxx --exclude="lecture-.*\.notebooks"
+
 # View the generated report
 cat report.md
 ```
@@ -87,7 +93,7 @@ cat report.md
 - `--start=YYYY-MM-DD` - Start date for report (end date defaults to today)
 - `--end=YYYY-MM-DD` - End date for report (use with --start for custom range)
 - `--output=FILE` - Output filename (default: report.md)
-- `--exclude=REPOS` - Comma-separated list of repos to exclude
+- `--exclude=REPOS` - Comma-separated list of repos or regex patterns to exclude (e.g., `repo1,lecture-.*\.notebooks`)
 - `--delay=SECONDS` - Delay between API calls (default: 0)
 
 The report is saved to `report.md` (or your specified output file) in the current directory.
@@ -99,7 +105,7 @@ The report is saved to `report.md` (or your specified output file) in the curren
 | `github-token` | GitHub token with access to the organization | Yes | - |
 | `organization` | GitHub organization name | No | `QuantEcon` |
 | `output-format` | Output format (`markdown` or `json`) | No | `markdown` |
-| `exclude-repos` | Comma-separated list of repository names to exclude from the report | No | `''` |
+| `exclude-repos` | Comma-separated list of repository names or regex patterns to exclude (e.g., `repo1,lecture-.*\.notebooks`) | No | `''` |
 | `api-delay` | Delay in seconds between API calls to avoid rate limits (0 = no delay) | No | `0` |
 
 ## Outputs

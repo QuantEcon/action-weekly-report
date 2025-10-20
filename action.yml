@@ -15,7 +15,7 @@ inputs:
     required: false
     default: 'markdown'
   exclude-repos:
-    description: 'Comma-separated list of repository names to exclude from the report'
+    description: 'Comma-separated list of repository names or regex patterns to exclude from the report (e.g., "repo1,lecture-.*\.notebooks")'
     required: false
     default: ''
   api-delay:
