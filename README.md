@@ -176,9 +176,11 @@ jobs:
         uses: peter-evans/create-issue-from-file@v4
         with:
           title: Weekly Activity Report
-          content-filepath: report.md
+          content-filepath: weekly-report.md  # Action outputs to weekly-report.md
           labels: report, automated
 ```
+
+**Note:** The action outputs to `weekly-report.md` by default. In CLI mode, it uses `report.md`.
 
 ## Report Format
 

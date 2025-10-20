@@ -111,7 +111,17 @@ ORGANIZATION="${CLI_ORG:-${INPUT_ORGANIZATION:-QuantEcon}}"
 OUTPUT_FORMAT="${INPUT_OUTPUT_FORMAT:-markdown}"
 EXCLUDE_REPOS="${CLI_EXCLUDE:-${INPUT_EXCLUDE_REPOS:-}}"
 API_DELAY="${CLI_DELAY:-${INPUT_API_DELAY:-0}}"
-OUTPUT_FILE="${CLI_OUTPUT:-report.md}"
+
+# Set output file based on context
+# - GitHub Actions: Use weekly-report.md for backward compatibility
+# - CLI mode: Use report.md (or user-specified filename)
+if [ -n "$GITHUB_OUTPUT" ] || [ -n "$INPUT_GITHUB_TOKEN" ]; then
+    # Running as GitHub Action - use weekly-report.md
+    OUTPUT_FILE="${CLI_OUTPUT:-weekly-report.md}"
+else
+    # Running in CLI mode - use report.md
+    OUTPUT_FILE="${CLI_OUTPUT:-report.md}"
+fi
 
 # Validate GitHub token
 if [ -z "$GITHUB_TOKEN" ]; then
@@ -127,6 +137,7 @@ if [ -z "$GITHUB_TOKEN" ]; then
 fi
 
 echo "DEBUG: Inputs - ORG: $ORGANIZATION, FORMAT: $OUTPUT_FORMAT, EXCLUDE: $EXCLUDE_REPOS"
+echo "DEBUG: Output file: $OUTPUT_FILE"
 
 # Date calculations
 if [ -n "$START_DATE" ] && [ -n "$END_DATE" ]; then
@@ -332,9 +343,14 @@ echo "$repo_names" | head -10  # Show first 10 for logging
 
 # Filter out excluded repositories if any are specified
 if [ -n "$EXCLUDE_REPOS" ]; then
-    echo "Excluding repositories matching: $EXCLUDE_REPOS"
     # Convert comma-separated list to array and filter out excluded repos
     IFS=',' read -ra exclude_array <<< "$EXCLUDE_REPOS"
+    echo "Exclude patterns (${#exclude_array[@]} total):"
+    for pattern in "${exclude_array[@]}"; do
+        pattern=$(echo "$pattern" | xargs)  # Trim whitespace
+        echo "  - Pattern: '$pattern'"
+    done
+    
     filtered_repos=""
     while IFS= read -r repo; do
         [ -z "$repo" ] && continue
@@ -345,7 +361,7 @@ if [ -n "$EXCLUDE_REPOS" ]; then
             # Check if pattern matches using grep -E (extended regex)
             if echo "$repo" | grep -qE "^${exclude_pattern}$"; then
                 excluded=true
-                echo "Excluding repository: $repo (matched pattern: $exclude_pattern)"
+                echo "  ✗ Excluding: $repo (matched '$exclude_pattern')"
                 break
             fi
         done
@@ -358,6 +374,7 @@ if [ -n "$EXCLUDE_REPOS" ]; then
         fi
     done <<< "$repo_names"
     repo_names="$filtered_repos"
+    echo "Repositories after filtering: $(echo "$repo_names" | wc -l | xargs)"
 fi
 
 # Initialize report variables

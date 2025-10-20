@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Always points to the latest stable v2.x.x version
   - For version pinning, use specific tags like `@v2.1.0` or `@v2.0.0`
   - Updated README examples to use `@v2` tag
+- **Output filename defaults**: Different defaults based on execution context
+  - GitHub Actions mode: `weekly-report.md` (backward compatible)
+  - CLI mode: `report.md` (cleaner for local development)
+  - Both modes support custom filename via `--output` flag
+
+### Added
+- **Enhanced debug output for exclusions**: Improved visibility into pattern matching
+  - Shows each exclude pattern being applied
+  - Displays which repositories matched which patterns
+  - Shows repository count before and after filtering
 
 ## [2.1.0] - 2025-10-20
 
