@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.2] - 2025-10-20
+
+### Fixed
+- **Composite action outputs**: Properly map outputs from step to action level
+  - Added `id: generate` to generation step
+  - Added `value:` mappings for `report-content` and `report-summary` outputs
+  - Fixes issue where outputs were empty in workflows using the action
+  - Resolves CI test failures
+
+### Added
+- **Pattern match validation**: Warns when exclude patterns don't match any repositories
+  - Helps catch regex typos and mistakes (e.g., missing `.*`)
+  - Shows excluded repository count
+  - Example: `⚠️ Warning: Pattern 'lecture-\.notebooks' didn't match any repositories`
+
+### Changed
+- **Improved CI tests**: Better verification of report generation
+  - Checks for `weekly-report.md` file creation
+  - Shows directory listing and file size on failure
+  - More detailed error messages for debugging
+
 ## [2.1.1] - 2025-10-20
 
 ### Fixed
