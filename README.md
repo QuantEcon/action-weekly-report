@@ -3,37 +3,39 @@
 [![CI](https://github.com/QuantEcon/action-weekly-report/actions/workflows/ci.yml/badge.svg)](https://github.com/QuantEcon/action-weekly-report/actions/workflows/ci.yml)
 [![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Weekly%20Report-blue.svg?colorA=24292e&colorB=0366d6&style=flat&longCache=true&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAM6wAADOsB5dZE0gAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAERSURBVCiRhZG/SsMxFEafKoEMFhyrdsFt6FYHNycunTo0Q4LgEhcnW4PgYgchGjoYiQ6ON2ARpK9nCxjUjuIFP+B+h3O/xmE2yVxPOJGkC3RgJ8qA3bQn7SiTKCQdC4J8HDW0v85CZaUHNzxhQcHdJvjZwM4mXaKJ4BdDMKxIsYoim1Smk2X6HPUdCnU5gO5D9POqvayBzY8nwoJJ+G9h9vGB0U8h8dNPgGLKlv1n6cJgAjjfY9lv1CVKq5f3oUAe5dJz9n3RkBhGA1ouJ/hT5a4c8yQQYSdF8vhN5gT1igMgZ9nJgzUqm9E1V+8rbYQhptmEURKA=)](https://github.com/marketplace/actions/quantecon-weekly-report)
 
-A powerful GitHub Action that generates comprehensive weekly activity reports across GitHub organizations. Perfect for tracking team productivity, repository health, and development trends.
+A powerful GitHub Action that generates comprehensive activity reports across GitHub organizations. Perfect for tracking team productivity, repository health, and development trends across any time period.
 
 ## 🎯 Features
 
 - **📊 Comprehensive Analytics**: Issues, PRs, commits, and activity summaries
-- **⚡ Smart Filtering**: Only checks repositories with recent activity for efficiency  
-- **🛡️ Rate Limit Resilient**: Built-in retry logic and configurable delays
+- **⚡ Smart Activity Detection**: Captures ALL repository activity (commits, issues, PRs, updates) with intelligent filtering
+- **� Complete Coverage**: Handles organizations with hundreds of repositories via pagination
+- **�🛡️ Rate Limit Resilient**: Built-in retry logic, token validation, and configurable delays
 - **📋 Multiple Formats**: Markdown and JSON output options
-- **🎛️ Highly Configurable**: Exclude repositories, custom delays, flexible reporting
-- **🔄 Fallback Mechanisms**: Ensures complete coverage even when filtering fails
+- **💻 CLI Support**: Run locally or in CI/CD with full command-line interface
+- **🎛️ Highly Configurable**: Exclude repositories, custom date ranges, flexible reporting
+- **✅ Validated Accuracy**: All metrics cross-validated against GitHub API
 
-## Features
+## What It Tracks
 
-This action generates a report containing:
-- Number of issues opened by repository (last 7 days)
-- Number of issues closed by repository (last 7 days)  
-- Number of PRs merged by repository (last 7 days)
-- Summary totals across all repositories
+Activity metrics by repository:
+- Current open issues (snapshot)
+- Issues opened/closed (in period)
+- PRs opened/merged (in period)
+- Direct commits (in period)
+- Activity summaries
 
-### Efficiency Features
-- **Smart repository filtering**: Uses GitHub Search API to identify repositories with recent activity (commits in the last 7 days) before checking for issues and PRs
-- **Fallback mechanism**: If no repositories are found with recent commits, falls back to checking all organization repositories to ensure complete coverage
-- **Activity-based reporting**: Only includes repositories with actual activity in the generated report
-- **Rate limit handling**: Automatically retries on rate limit errors with exponential backoff, and provides clear warnings when data is incomplete
-- **Configurable delays**: Optional delays between API calls to reduce rate limit pressure
+**New in v2.0:** Enhanced tracking for organizations with >100 repositories, post-processing to exclude repos with zero activity, and comprehensive CLI support.
+
+See [documentation](docs/) for detailed information.
 
 ## Usage
 
+### As a GitHub Action
+
 ```yaml
-- name: Generate weekly report
-  uses: QuantEcon/action-weekly-report@v1
+- name: Generate activity report
+  uses: QuantEcon/action-weekly-report@v2
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     organization: 'QuantEcon'
@@ -41,6 +43,54 @@ This action generates a report containing:
     exclude-repos: 'lecture-python.notebooks,auto-updated-repo'
     api-delay: '1'  # Add 1 second delay between API calls to avoid rate limits
 ```
+
+### Command Line Usage (Local Development)
+
+Run the script directly to generate reports locally - perfect for development, testing, or ad-hoc reports:
+
+```bash
+# Show available options
+./generate-report.sh --help
+
+# Basic usage (last 7 days)
+export GITHUB_TOKEN=ghp_xxxxx
+./generate-report.sh
+
+# Or use command line argument
+./generate-report.sh --token=ghp_xxxxx
+
+# Report from specific date to today
+./generate-report.sh --token=ghp_xxxxx --start=2025-10-01
+
+# Custom date range (e.g., monthly report)
+./generate-report.sh --token=ghp_xxxxx --start=2025-10-01 --end=2025-10-31
+
+# Different organization
+./generate-report.sh --token=ghp_xxxxx --org=YourOrg
+
+# Custom output filename
+./generate-report.sh --token=ghp_xxxxx --output=monthly-report.md
+
+# View the generated report
+cat report.md
+```
+
+**What happens in CLI mode:**
+- ✅ Fetches data from GitHub API (read-only)
+- ✅ Generates markdown file locally (default: `report.md`)
+- ❌ Does NOT create issues or post anything
+- ❌ Does NOT modify your repositories
+
+**Available Options:**
+- `--token=TOKEN` - GitHub token for API access (read-only, see [Token Usage](#how-it-works))
+- `--org=ORG` - Organization name (default: QuantEcon)
+- `--start=YYYY-MM-DD` - Start date for report (end date defaults to today)
+- `--end=YYYY-MM-DD` - End date for report (use with --start for custom range)
+- `--output=FILE` - Output filename (default: report.md)
+- `--exclude=REPOS` - Comma-separated list of repos to exclude
+- `--delay=SECONDS` - Delay between API calls (default: 0)
+
+The report is saved to `report.md` (or your specified output file) in the current directory.
 
 ## Inputs
 
@@ -59,32 +109,88 @@ This action generates a report containing:
 | `report-content` | The full generated report content |
 | `report-summary` | A brief summary of the report metrics |
 
-## Permissions
+## How It Works
 
-The GitHub token must have read access to:
-- Organization repositories
-- Repository issues
-- Repository pull requests
+### What This Action Does
+
+1. **Fetches** repository data from GitHub API (read-only, with full pagination support)
+2. **Generates** a markdown report file (default: `report.md`)
+3. **Outputs** report content for downstream workflow steps
+
+**Key Improvements in v2.0:**
+- Handles organizations with >100 repositories (full pagination)
+- Accurate date range filtering (respects both start and end dates)
+- Post-processing removes repos with zero activity (cleaner reports)
+- Token validation on startup (fail-fast with clear errors)
+
+**This action does NOT:**
+- Create GitHub issues (that's handled by your workflow using a separate action)
+- Modify any repositories
+- Post or publish anything
+
+### Token Usage
+
+**For CLI Mode (Local Development):**
+- Token is used to **read** organization data via GitHub API
+- No issues are created - you just get a markdown file
+- Same permissions as action mode (read-only)
+
+**For Action Mode (Automated Workflows):**
+- Token is used to **read** organization data
+- Report is saved to `report.md` (default)
+- Your workflow can then post the report as an issue using a separate action
+
+**Required Permissions:**
+- ✅ `repo` - Read repository data
+- ✅ `read:org` - Read organization data
+
+**Not Required:**
+- ❌ Issue creation permissions (unless your workflow posts issues separately)
 
 ## Example Workflow
 
-See the [weekly report workflow](../../workflows/weekly-report.yml) for a complete example that runs every Saturday and creates an issue with the report.
+```yaml
+jobs:
+  weekly-report:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Generate the report (our action)
+      - name: Generate weekly report
+        uses: QuantEcon/action-weekly-report@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          organization: 'QuantEcon'
+      
+      # Step 2: Create issue with report (separate action - optional)
+      - name: Create issue from report
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: Weekly Activity Report
+          content-filepath: report.md
+          labels: report, automated
+```
 
 ## Report Format
 
-The generated markdown report includes:
-- A summary table showing activity by repository
-- Total counts across all repositories
-- Data completeness warnings if API calls failed due to rate limits or other errors
-- Report metadata (generation date, period covered)
+The generated report includes a summary table with activity metrics and totals across all repositories. Only repositories with activity in the reporting period are included.
 
-Only repositories with activity in the reporting period are included in the detailed table.
+See example report in [docs/testing.md](docs/testing.md).
 
 ## Rate Limiting
 
-GitHub's API has rate limits (5000 requests/hour for authenticated requests). For large organizations:
+For large organizations, use the `api-delay` parameter to add delays between requests. See [documentation](docs/) for details.
 
-- **Monitor warnings**: The report will include warnings when rate limits are hit
-- **Add delays**: Use the `api-delay` parameter to add delays between requests (e.g., `api-delay: '1'` for 1 second delays)
-- **Run during off-peak**: Schedule reports during off-peak hours to avoid conflicts with other API usage
-- **Incomplete data**: When rate limited, the report will show `0` for affected repositories and include a warning
+## Documentation
+
+- **[Testing Guide](docs/testing.md)** - How to test and validate the action
+- **[Technical Details](docs/improvements.md)** - Implementation details
+- **[Validation Examples](docs/validation.md)** - Real-world validation
+- **[Release Notes](docs/releases/)** - Version-specific changes
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+
+## License
+
+MIT - See [LICENSE](LICENSE) for details.

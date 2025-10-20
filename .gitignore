@@ -1,0 +1,17 @@
+# Generated reports from local testing
+report.md
+weekly-report.md
+*.md.bak
+
+# macOS
+.DS_Store
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Test outputs
+test-output/
