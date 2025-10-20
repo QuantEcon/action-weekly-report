@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Floating version tag**: Added `v2` tag that automatically tracks the latest v2.x.x release
+  - Recommended usage: `uses: QuantEcon/action-weekly-report@v2`
+  - Always points to the latest stable v2.x.x version
+  - For version pinning, use specific tags like `@v2.1.0` or `@v2.0.0`
+  - Updated README examples to use `@v2` tag
+
 ## [2.1.0] - 2025-10-20
 
 ### Added

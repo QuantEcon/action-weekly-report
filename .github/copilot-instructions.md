@@ -275,9 +275,28 @@ cat weekly-report.md
    jq -r '.tag_name' /tmp/latest.json
    ```
 
-5. **Post-Release Verification**
+5. **Update floating version tag (for v2.x.x releases)**
+   ```bash
+   # Update v2 tag to point to latest v2.x.x release
+   git tag -f v2 vX.Y.Z
+   git push origin v2 --force
+   
+   # Verify v2 points to the new version
+   git show-ref --tags | grep v2
+   ```
+
+6. **Post-Release Verification**
    ```bash
    # Check release exists
+   gh api repos/QuantEcon/action-weekly-report/releases/latest > /tmp/release.json 2>&1
+   cat /tmp/release.json | jq -r '.tag_name, .name, .published_at'
+   
+   # Verify tag
+   git tag | grep vX.Y.Z
+   
+   # Verify v2 floating tag points to new version
+   git show-ref --tags | grep v2
+   ```
    gh api repos/QuantEcon/action-weekly-report/releases/latest > /tmp/release.json 2>&1
    cat /tmp/release.json | jq -r '.tag_name, .name, .published_at'
    

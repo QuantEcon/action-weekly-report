@@ -33,16 +33,20 @@ See [documentation](docs/) for detailed information.
 
 ### As a GitHub Action
 
+**Recommended:** Use the floating `@v2` tag to automatically get the latest v2.x.x features and fixes:
+
 ```yaml
 - name: Generate activity report
-  uses: QuantEcon/action-weekly-report@v2
+  uses: QuantEcon/action-weekly-report@v2  # Always uses latest v2.x.x release
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     organization: 'QuantEcon'
     output-format: 'markdown'
-    exclude-repos: 'lecture-python.notebooks,auto-updated-repo'
+    exclude-repos: 'lecture-.*\.notebooks'  # Supports regex patterns
     api-delay: '1'  # Add 1 second delay between API calls to avoid rate limits
 ```
+
+**For specific versions:** Pin to an exact release (e.g., `@v2.1.0`, `@v2.0.0`) if you need version stability.
 
 ### Command Line Usage (Local Development)
 
@@ -162,7 +166,7 @@ jobs:
     steps:
       # Step 1: Generate the report (our action)
       - name: Generate weekly report
-        uses: QuantEcon/action-weekly-report@v2
+        uses: QuantEcon/action-weekly-report@v2  # Always uses latest v2.x.x release
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           organization: 'QuantEcon'
