@@ -86,6 +86,50 @@ root/
 - Be specific and descriptive
 - Reference issues when applicable
 
+## GitHub CLI (`gh`) Usage
+
+### ⚠️ Critical: Use Temporary Files for Output
+
+**Problem:** `gh` commands display interactive/formatted text that can clutter terminal output
+
+**Solution:** Always redirect `gh` output to temporary files:
+
+```bash
+# ❌ BAD - Output may be cluttered with interactive display
+gh release view v2.0.0
+
+# ✅ GOOD - Clean output via temp file
+gh release view v2.0.0 > /tmp/release-info.txt 2>&1
+cat /tmp/release-info.txt
+
+# ✅ GOOD - For JSON processing
+gh api repos/OWNER/REPO/releases/latest > /tmp/release.json
+jq -r '.tag_name' /tmp/release.json
+
+# ✅ GOOD - For release creation
+gh release create v2.0.0 \
+  --title "Release Title" \
+  --notes-file /tmp/release-notes.md \
+  > /tmp/release-output.txt 2>&1
+```
+
+**Examples:**
+```bash
+# List releases cleanly
+gh release list > /tmp/releases.txt 2>&1
+cat /tmp/releases.txt
+
+# Check PR status
+gh pr view 123 > /tmp/pr-details.txt 2>&1
+grep "state:" /tmp/pr-details.txt
+
+# Create release with notes file
+echo "Release notes here" > /tmp/notes.md
+gh release create v1.0.0 --notes-file /tmp/notes.md > /tmp/result.txt 2>&1
+```
+
+**Why:** Prevents interactive prompts, formatting codes, and progress indicators from cluttering output
+
 ## Development Workflow
 
 ### Making Changes
@@ -145,7 +189,47 @@ cat weekly-report.md
 
 ## Release Process
 
+### Pre-Release Checklist
+
+**CRITICAL: Always complete BEFORE creating any release**
+
+1. **Review All Documentation in `docs/`**
+   ```bash
+   # Check all docs files are up to date
+   ls -lh docs/
+   
+   # Review each file:
+   # - docs/README.md - Index current?
+   # - docs/improvements.md - Reflects all changes?
+   # - docs/testing.md - Testing procedures current?
+   # - docs/validation.md - Validation examples accurate?
+   # - docs/releases/vX.Y.Z.md - Release notes complete?
+   ```
+
+2. **Verify Documentation Completeness**
+   - [ ] All new features documented
+   - [ ] All bug fixes explained
+   - [ ] CLI changes reflected
+   - [ ] Code examples up to date
+   - [ ] Cross-references correct
+   - [ ] No outdated information
+   - [ ] No corrupted/duplicate content
+
+3. **Check CHANGELOG.md**
+   - [ ] All changes under `[Unreleased]` are accurate
+   - [ ] Version number is correct
+   - [ ] Release date is set
+   - [ ] Migration guide included (if breaking changes)
+
+4. **Verify README.md**
+   - [ ] Examples show correct version
+   - [ ] Features list is complete
+   - [ ] Usage instructions accurate
+   - [ ] Links work correctly
+
 ### Creating a Release
+
+**Only after completing Pre-Release Checklist:**
 
 1. **Update CHANGELOG.md**
    - Move `[Unreleased]` items to new version section
@@ -158,13 +242,47 @@ cat weekly-report.md
    # - What's new
    # - Breaking changes
    # - Migration guide (if needed)
+   # - Validation results
    ```
 
-3. **Tag and release**
+3. **Commit and tag**
    ```bash
-   git tag vX.Y.Z
+   git add .
+   git commit -m "chore: prepare vX.Y.Z release"
+   git push origin main
+   
+   git tag -a vX.Y.Z -m "Release vX.Y.Z"
    git push origin vX.Y.Z
-   # Create GitHub release from tag
+   ```
+
+4. **Create GitHub release using gh CLI**
+   ```bash
+   # Create release notes file
+   cat > /tmp/release-notes.md << 'EOF'
+   ## Release Notes Here
+   EOF
+   
+   # Create release (redirect to temp file!)
+   gh release create vX.Y.Z \
+     --title "vX.Y.Z - Release Title" \
+     --notes-file /tmp/release-notes.md \
+     --latest \
+     > /tmp/release-output.txt 2>&1
+   
+   # Verify success
+   cat /tmp/release-output.txt
+   gh api repos/QuantEcon/action-weekly-report/releases/latest > /tmp/latest.json
+   jq -r '.tag_name' /tmp/latest.json
+   ```
+
+5. **Post-Release Verification**
+   ```bash
+   # Check release exists
+   gh api repos/QuantEcon/action-weekly-report/releases/latest > /tmp/release.json 2>&1
+   cat /tmp/release.json | jq -r '.tag_name, .name, .published_at'
+   
+   # Verify tag
+   git tag | grep vX.Y.Z
    ```
 
 ## Common Tasks
