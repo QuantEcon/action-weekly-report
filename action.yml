@@ -26,13 +26,16 @@ inputs:
 outputs:
   report-content:
     description: 'The generated weekly report content'
+    value: ${{ steps.generate.outputs.report-content }}
   report-summary:
     description: 'A brief summary of the report metrics'
+    value: ${{ steps.generate.outputs.report-summary }}
 
 runs:
   using: 'composite'
   steps:
     - name: Generate weekly report
+      id: generate
       shell: bash
       run: ${{ github.action_path }}/generate-report.sh
       env:
