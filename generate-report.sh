@@ -351,7 +351,11 @@ if [ -n "$EXCLUDE_REPOS" ]; then
         echo "  - Pattern: '$pattern'"
     done
     
+    # Track matches for each pattern (simple counter approach)
+    pattern_match_counts=""
+    
     filtered_repos=""
+    excluded_count=0
     while IFS= read -r repo; do
         [ -z "$repo" ] && continue
         excluded=false
@@ -361,6 +365,17 @@ if [ -n "$EXCLUDE_REPOS" ]; then
             # Check if pattern matches using grep -E (extended regex)
             if echo "$repo" | grep -qE "^${exclude_pattern}$"; then
                 excluded=true
+                excluded_count=$((excluded_count + 1))
+                # Track this match
+                if echo "$pattern_match_counts" | grep -q "^${exclude_pattern}:"; then
+                    # Increment count
+                    old_count=$(echo "$pattern_match_counts" | grep "^${exclude_pattern}:" | cut -d: -f2)
+                    new_count=$((old_count + 1))
+                    pattern_match_counts=$(echo "$pattern_match_counts" | sed "s/^${exclude_pattern}:${old_count}$/${exclude_pattern}:${new_count}/")
+                else
+                    # First match for this pattern
+                    pattern_match_counts="${pattern_match_counts}${exclude_pattern}:1"$'\n'
+                fi
                 echo "  ✗ Excluding: $repo (matched '$exclude_pattern')"
                 break
             fi
@@ -373,8 +388,18 @@ if [ -n "$EXCLUDE_REPOS" ]; then
             fi
         fi
     done <<< "$repo_names"
+    
+    # Warn about patterns that didn't match anything
+    echo ""
+    for pattern in "${exclude_array[@]}"; do
+        pattern=$(echo "$pattern" | xargs)
+        if ! echo "$pattern_match_counts" | grep -q "^${pattern}:"; then
+            echo "  ⚠️  Warning: Pattern '$pattern' didn't match any repositories"
+        fi
+    done
+    
     repo_names="$filtered_repos"
-    echo "Repositories after filtering: $(echo "$repo_names" | wc -l | xargs)"
+    echo "Repositories after filtering: $(echo "$repo_names" | wc -l | xargs) (excluded: $excluded_count)"
 fi
 
 # Initialize report variables

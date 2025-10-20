@@ -62,8 +62,18 @@ jobs:
           echo "ERROR: No report content generated"
           exit 1
         fi
+        
+        # Check that weekly-report.md was created
+        if [ ! -f "weekly-report.md" ]; then
+          echo "ERROR: weekly-report.md file not found"
+          echo "Files in current directory:"
+          ls -la
+          exit 1
+        fi
+        
         echo "SUCCESS: Report generated"
         echo "Summary: ${{ steps.test-report.outputs.report-summary }}"
+        echo "Report file size: $(wc -l weekly-report.md) lines"
         
     - name: Test JSON output format
       uses: ./
