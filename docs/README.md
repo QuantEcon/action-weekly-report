@@ -3,6 +3,7 @@
 ## Quick Links
 
 - [Testing Guide](testing.md) - How to test and validate the action
+- [Hyperlink Feature](hyperlinks.md) - Interactive metrics with clickable links
 - [Technical Details](improvements.md) - Implementation and architecture
 - [Validation](validation.md) - Real-world examples and verification
 - [Release Notes](releases/) - Version history and changes
@@ -16,6 +17,12 @@
 - Testing without GitHub token
 - Testing with live API data
 - Troubleshooting
+
+**[Hyperlink Feature](hyperlinks.md)**
+- Interactive clickable metrics
+- How hyperlinks work
+- URL formats and destinations
+- Usage examples
 
 ### Technical Documentation
 

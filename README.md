@@ -1,16 +1,16 @@
 # QuantEcon Weekly Report Action
 
 [![CI](https://github.com/QuantEcon/action-weekly-report/actions/workflows/ci.yml/badge.svg)](https://github.com/QuantEcon/action-weekly-report/actions/workflows/ci.yml)
-[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Weekly%20Report-blue.svg?colorA=24292e&colorB=0366d6&style=flat&longCache=true&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAM6wAADOsB5dZE0gAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAERSURBVCiRhZG/SsMxFEafKoEMFhyrdsFt6FYHNycunTo0Q4LgEhcnW4PgYgchGjoYiQ6ON2ARpK9nCxjUjuIFP+B+h3O/xmE2yVxPOJGkC3RgJ8qA3bQn7SiTKCQdC4J8HDW0v85CZaUHNzxhQcHdJvjZwM4mXaKJ4BdDMKxIsYoim1Smk2X6HPUdCnU5gO5D9POqvayBzY8nwoJJ+G9h9vGB0U8h8dNPgGLKlv1n6cJgAjjfY9lv1CVKq5f3oUAe5dJz9n3RkBhGA1ouJ/hT5a4c8yQQYSdF8vhN5gT1igMgZ9nJgzUqm9E1V+8rbYQhptmEURKA=)](https://github.com/marketplace/actions/quantecon-weekly-report)
 
 A powerful GitHub Action that generates comprehensive activity reports across GitHub organizations. Perfect for tracking team productivity, repository health, and development trends across any time period.
 
 ## 🎯 Features
 
 - **📊 Comprehensive Analytics**: Issues, PRs, commits, and activity summaries
+- **🔗 Clickable Metrics**: Numbers > 0 link directly to GitHub search results for quick navigation
 - **⚡ Smart Activity Detection**: Captures ALL repository activity (commits, issues, PRs, updates) with intelligent filtering
-- **� Complete Coverage**: Handles organizations with hundreds of repositories via pagination
-- **�🛡️ Rate Limit Resilient**: Built-in retry logic, token validation, and configurable delays
+- **🔄 Complete Coverage**: Handles organizations with hundreds of repositories via pagination
+- **🛡️ Rate Limit Resilient**: Built-in retry logic, token validation, and configurable delays
 - **📋 Multiple Formats**: Markdown and JSON output options
 - **💻 CLI Support**: Run locally or in CI/CD with full command-line interface
 - **🎛️ Highly Configurable**: Exclude repositories, custom date ranges, flexible reporting
@@ -186,7 +186,9 @@ jobs:
 
 The generated report includes a summary table with activity metrics and totals across all repositories. Only repositories with activity in the reporting period are included.
 
-See example report in [docs/testing.md](docs/testing.md).
+**Interactive Hyperlinks:** Metrics greater than 0 are automatically formatted as clickable links that take you directly to the filtered GitHub results. For example, clicking "[7](https://github.com/QuantEcon/QuantEcon.jl/pulls?q=is:pr+merged:2025-10-01..2025-10-20)" shows the 7 merged PRs for that period. Only 0 values display as plain text.
+
+See [Hyperlink Feature Documentation](docs/hyperlinks.md) for details and [example report](docs/testing.md).
 
 ## Rate Limiting
 

@@ -413,6 +413,18 @@ failed_repos=0
 rate_limited_repos=0
 report_content=""
 
+# Helper function to create clickable links for metrics > 0
+format_metric() {
+    local count="$1"
+    local url="$2"
+    
+    if [ "$count" -gt 0 ]; then
+        echo "[$count]($url)"
+    else
+        echo "$count"
+    fi
+}
+
 # Start building the report
 if [ "$OUTPUT_FORMAT" = "markdown" ]; then
     # Format dates for display (portable way)
@@ -539,8 +551,25 @@ while IFS= read -r repo; do
     if [ $((opened_issues + closed_issues + opened_prs + merged_prs + commits)) -gt 0 ]; then
         repos_with_activity=$((repos_with_activity + 1))
         if [ "$OUTPUT_FORMAT" = "markdown" ]; then
+            # Create GitHub search URLs for clickable metrics
+            # Note: GitHub search uses YYYY-MM-DD format for dates
+            current_issues_url="https://github.com/${ORGANIZATION}/${repo}/issues?q=is:issue+is:open"
+            opened_issues_url="https://github.com/${ORGANIZATION}/${repo}/issues?q=is:issue+created:${start_display}..${end_display}"
+            closed_issues_url="https://github.com/${ORGANIZATION}/${repo}/issues?q=is:issue+closed:${start_display}..${end_display}"
+            opened_prs_url="https://github.com/${ORGANIZATION}/${repo}/pulls?q=is:pr+created:${start_display}..${end_display}"
+            merged_prs_url="https://github.com/${ORGANIZATION}/${repo}/pulls?q=is:pr+merged:${start_display}..${end_display}"
+            commits_url="https://github.com/${ORGANIZATION}/${repo}/commits?since=${start_display}&until=${end_display}"
+            
+            # Format metrics as clickable links if > 1
+            current_issues_display=$(format_metric "$current_issues" "$current_issues_url")
+            opened_issues_display=$(format_metric "$opened_issues" "$opened_issues_url")
+            closed_issues_display=$(format_metric "$closed_issues" "$closed_issues_url")
+            opened_prs_display=$(format_metric "$opened_prs" "$opened_prs_url")
+            merged_prs_display=$(format_metric "$merged_prs" "$merged_prs_url")
+            commits_display=$(format_metric "$commits" "$commits_url")
+            
             report_content="${report_content}
-| $repo | $current_issues | $opened_issues | $closed_issues | $opened_prs | $merged_prs | $commits |"
+| $repo | $current_issues_display | $opened_issues_display | $closed_issues_display | $opened_prs_display | $merged_prs_display | $commits_display |"
         fi
     else
         echo "DEBUG: Skipping $repo from report (no activity: all metrics are zero)"
