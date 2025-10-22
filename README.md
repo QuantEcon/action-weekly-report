@@ -8,6 +8,7 @@ A powerful GitHub Action that generates comprehensive activity reports across Gi
 
 - **📊 Comprehensive Analytics**: Issues, PRs, commits, and activity summaries
 - **🔗 Clickable Metrics**: Numbers > 0 link directly to GitHub search results for quick navigation
+- **🌐 External Repository Tracking**: Monitor repositories outside your primary organization
 - **⚡ Smart Activity Detection**: Captures ALL repository activity (commits, issues, PRs, updates) with intelligent filtering
 - **🔄 Complete Coverage**: Handles organizations with hundreds of repositories via pagination
 - **🛡️ Rate Limit Resilient**: Built-in retry logic, token validation, and configurable delays
@@ -43,6 +44,7 @@ See [documentation](docs/) for detailed information.
     organization: 'QuantEcon'
     output-format: 'markdown'
     exclude-repos: 'lecture-.*\.notebooks'  # Supports regex patterns
+    track-external-repos: 'executablebooks/sphinx-proof,executablebooks/sphinx-exercise'  # Track external repos
     api-delay: '1'  # Add 1 second delay between API calls to avoid rate limits
 ```
 
@@ -81,6 +83,9 @@ export GITHUB_TOKEN=ghp_xxxxx
 # Exclude repositories using regex patterns (e.g., all .notebooks repos)
 ./generate-report.sh --token=ghp_xxxxx --exclude="lecture-.*\.notebooks"
 
+# Track external repositories (from other organizations)
+./generate-report.sh --token=ghp_xxxxx --track-external-repos=executablebooks/sphinx-proof,executablebooks/sphinx-exercise
+
 # View the generated report
 cat report.md
 ```
@@ -98,6 +103,7 @@ cat report.md
 - `--end=YYYY-MM-DD` - End date for report (use with --start for custom range)
 - `--output=FILE` - Output filename (default: report.md)
 - `--exclude=REPOS` - Comma-separated list of repos or regex patterns to exclude (e.g., `repo1,lecture-.*\.notebooks`)
+- `--track-external-repos=LIST` - Comma-separated list of external repos to track (format: `org/repo`, e.g., `executablebooks/sphinx-proof,executablebooks/sphinx-exercise`)
 - `--delay=SECONDS` - Delay between API calls (default: 0)
 
 The report is saved to `report.md` (or your specified output file) in the current directory.
@@ -110,6 +116,7 @@ The report is saved to `report.md` (or your specified output file) in the curren
 | `organization` | GitHub organization name | No | `QuantEcon` |
 | `output-format` | Output format (`markdown` or `json`) | No | `markdown` |
 | `exclude-repos` | Comma-separated list of repository names or regex patterns to exclude (e.g., `repo1,lecture-.*\.notebooks`) | No | `''` |
+| `track-external-repos` | Comma-separated list of external repositories to track (format: `org/repo`, e.g., `executablebooks/sphinx-proof,executablebooks/sphinx-exercise`) | No | `''` |
 | `api-delay` | Delay in seconds between API calls to avoid rate limits (0 = no delay) | No | `0` |
 
 ## Outputs
@@ -170,6 +177,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           organization: 'QuantEcon'
+          track-external-repos: 'executablebooks/sphinx-proof,executablebooks/sphinx-exercise'
       
       # Step 2: Create issue with report (separate action - optional)
       - name: Create issue from report
@@ -187,6 +195,8 @@ jobs:
 The generated report includes a summary table with activity metrics and totals across all repositories. Only repositories with activity in the reporting period are included.
 
 **Interactive Hyperlinks:** Metrics greater than 0 are automatically formatted as clickable links that take you directly to the filtered GitHub results. For example, clicking "[7](https://github.com/QuantEcon/QuantEcon.jl/pulls?q=is:pr+merged:2025-10-01..2025-10-20)" shows the 7 merged PRs for that period. Only 0 values display as plain text.
+
+**External Repositories:** When tracking external repos with `track-external-repos`, they appear in a separate "External Repositories" section below the main organization table. Each section has independent totals. External repos are displayed with their full `org/repo` format for clarity.
 
 See [Hyperlink Feature Documentation](docs/hyperlinks.md) for details and [example report](docs/testing.md).
 

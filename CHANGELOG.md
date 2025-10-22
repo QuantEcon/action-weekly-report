@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2025-10-23
+
+### Added
+- **External repository tracking**: Track activity across repositories outside your primary organization
+  - New `--track-external-repos` CLI flag and `track-external-repos` action input
+  - Format: comma-separated list of `org/repo` pairs (e.g., `executablebooks/sphinx-proof,executablebooks/sphinx-exercise`)
+  - Separate "External Repositories" section in report with independent totals
+  - Full `org/repo` format displayed for clarity
+  - Works with public repositories using same token permissions
+  - Validates `org/repo` format with clear error messages
+  - Only displays section when external repos have activity
+  - All metrics include clickable hyperlinks like main section
+
 ## [2.1.2] - 2025-10-20
 
 ### Fixed

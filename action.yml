@@ -18,6 +18,10 @@ inputs:
     description: 'Comma-separated list of repository names or regex patterns to exclude from the report (e.g., "repo1,lecture-.*\.notebooks")'
     required: false
     default: ''
+  track-external-repos:
+    description: 'Comma-separated list of external repositories to track (format: org/repo, e.g., "executablebooks/sphinx-proof,executablebooks/sphinx-exercise")'
+    required: false
+    default: ''
   api-delay:
     description: 'Delay in seconds between API calls to avoid rate limits (0 = no delay)'
     required: false
@@ -43,4 +47,5 @@ runs:
         INPUT_ORGANIZATION: ${{ inputs.organization }}
         INPUT_OUTPUT_FORMAT: ${{ inputs.output-format }}
         INPUT_EXCLUDE_REPOS: ${{ inputs.exclude-repos }}
+        INPUT_TRACK_EXTERNAL_REPOS: ${{ inputs.track-external-repos }}
         INPUT_API_DELAY: ${{ inputs.api-delay }}

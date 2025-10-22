@@ -15,14 +15,15 @@ Usage: $0 [OPTIONS]
 Generate an activity report for a GitHub organization.
 
 OPTIONS:
-    --token=TOKEN         GitHub personal access token (or set GITHUB_TOKEN env var)
-    --org=ORG            Organization name (default: QuantEcon)
-    --start=YYYY-MM-DD   Start date for report (end date defaults to today)
-    --end=YYYY-MM-DD     End date for report (requires --start)
-    --output=FILE        Output filename (default: report.md)
-    --exclude=REPOS      Comma-separated list of repos to exclude (supports regex patterns)
-    --delay=SECONDS      Delay between API calls (default: 0)
-    --help               Show this help message
+    --token=TOKEN                GitHub personal access token (or set GITHUB_TOKEN env var)
+    --org=ORG                   Organization name (default: QuantEcon)
+    --start=YYYY-MM-DD          Start date for report (end date defaults to today)
+    --end=YYYY-MM-DD            End date for report (requires --start)
+    --output=FILE               Output filename (default: report.md)
+    --exclude=REPOS             Comma-separated list of repos to exclude (supports regex patterns)
+    --track-external-repos=LIST Comma-separated list of external repos (format: org/repo,org/repo)
+    --delay=SECONDS             Delay between API calls (default: 0)
+    --help                      Show this help message
 
 EXAMPLES:
     # Generate report for last 7 days (default)
@@ -46,12 +47,16 @@ EXAMPLES:
     # Exclude repositories using regex patterns
     $0 --token=ghp_xxxxx --exclude="lecture-.*\.notebooks,.*-archive"
 
+    # Track external repositories
+    $0 --token=ghp_xxxxx --track-external-repos=executablebooks/sphinx-proof,executablebooks/sphinx-exercise
+
 ENVIRONMENT VARIABLES:
-    GITHUB_TOKEN or INPUT_GITHUB_TOKEN    GitHub token
-    INPUT_ORGANIZATION                     Organization name
-    INPUT_OUTPUT_FORMAT                    Output format (markdown/json)
-    INPUT_EXCLUDE_REPOS                    Repositories to exclude
-    INPUT_API_DELAY                        API delay in seconds
+    GITHUB_TOKEN or INPUT_GITHUB_TOKEN       GitHub token
+    INPUT_ORGANIZATION                        Organization name
+    INPUT_OUTPUT_FORMAT                       Output format (markdown/json)
+    INPUT_EXCLUDE_REPOS                       Repositories to exclude
+    INPUT_TRACK_EXTERNAL_REPOS                External repositories to track
+    INPUT_API_DELAY                           API delay in seconds
 
 OUTPUT:
     Report is saved to: report.md (or specified --output file)
@@ -82,6 +87,10 @@ for arg in "$@"; do
             CLI_EXCLUDE="${arg#*=}"
             shift
             ;;
+        --track-external-repos=*)
+            CLI_EXTERNAL_REPOS="${arg#*=}"
+            shift
+            ;;
         --delay=*)
             CLI_DELAY="${arg#*=}"
             shift
@@ -110,6 +119,7 @@ GITHUB_TOKEN="${CLI_TOKEN:-${GITHUB_TOKEN:-${INPUT_GITHUB_TOKEN}}}"
 ORGANIZATION="${CLI_ORG:-${INPUT_ORGANIZATION:-QuantEcon}}"
 OUTPUT_FORMAT="${INPUT_OUTPUT_FORMAT:-markdown}"
 EXCLUDE_REPOS="${CLI_EXCLUDE:-${INPUT_EXCLUDE_REPOS:-}}"
+TRACK_EXTERNAL_REPOS="${CLI_EXTERNAL_REPOS:-${INPUT_TRACK_EXTERNAL_REPOS:-}}"
 API_DELAY="${CLI_DELAY:-${INPUT_API_DELAY:-0}}"
 
 # Set output file based on context
@@ -137,7 +147,25 @@ if [ -z "$GITHUB_TOKEN" ]; then
 fi
 
 echo "DEBUG: Inputs - ORG: $ORGANIZATION, FORMAT: $OUTPUT_FORMAT, EXCLUDE: $EXCLUDE_REPOS"
+echo "DEBUG: External repos: $TRACK_EXTERNAL_REPOS"
 echo "DEBUG: Output file: $OUTPUT_FILE"
+
+# Validate external repos format (must be org/repo)
+if [ -n "$TRACK_EXTERNAL_REPOS" ]; then
+    echo "Validating external repositories format..."
+    IFS=',' read -ra EXTERNAL_REPOS_ARRAY <<< "$TRACK_EXTERNAL_REPOS"
+    for repo in "${EXTERNAL_REPOS_ARRAY[@]}"; do
+        # Trim whitespace
+        repo=$(echo "$repo" | xargs)
+        # Check format: must contain exactly one slash
+        if [[ ! "$repo" =~ ^[^/]+/[^/]+$ ]]; then
+            echo "ERROR: Invalid external repo format: '$repo'"
+            echo "Expected format: org/repo (e.g., executablebooks/sphinx-proof)"
+            exit 1
+        fi
+    done
+    echo "✓ External repositories validated: ${#EXTERNAL_REPOS_ARRAY[@]} repo(s)"
+fi
 
 # Date calculations
 if [ -n "$START_DATE" ] && [ -n "$END_DATE" ]; then
@@ -249,6 +277,62 @@ api_call() {
                 ;;
         esac
     done
+}
+
+# Function to process a single external repository
+process_external_repo() {
+    local full_repo="$1"  # Format: org/repo
+    local repo_org="${full_repo%/*}"
+    local repo_name="${full_repo#*/}"
+    
+    echo "Processing external repository: $full_repo" >&2
+    
+    # Count total current open issues
+    local current_issues_response
+    current_issues_response=$(api_call "/repos/${full_repo}/issues?state=open")
+    local current_issues=0
+    current_issues=$(echo "$current_issues_response" | jq 'if type == "array" then [.[] | select(.pull_request == null)] | length else 0 end' 2>/dev/null || echo 0)
+    
+    # Count opened issues in the date range
+    local opened_response
+    opened_response=$(api_call "/repos/${full_repo}/issues?state=all")
+    local opened_issues=0
+    opened_issues=$(echo "$opened_response" | jq --arg since "$WEEK_AGO" --arg until "$NOW" 'if type == "array" then [.[] | select(.created_at >= $since and .created_at <= $until and .pull_request == null)] | length else 0 end' 2>/dev/null || echo 0)
+    
+    # Count closed issues in the date range
+    local closed_response
+    closed_response=$(api_call "/repos/${full_repo}/issues?state=closed")
+    local closed_issues=0
+    closed_issues=$(echo "$closed_response" | jq --arg since "$WEEK_AGO" --arg until "$NOW" 'if type == "array" then [.[] | select(.closed_at != null and .closed_at >= $since and .closed_at <= $until and .pull_request == null)] | length else 0 end' 2>/dev/null || echo 0)
+    
+    # Count merged PRs in the date range
+    local prs_response
+    prs_response=$(api_call "/repos/${full_repo}/pulls?state=closed")
+    local merged_prs=0
+    merged_prs=$(echo "$prs_response" | jq --arg since "$WEEK_AGO" --arg until "$NOW" 'if type == "array" then [.[] | select(.merged_at != null and .merged_at >= $since and .merged_at <= $until)] | length else 0 end' 2>/dev/null || echo 0)
+    
+    # Count opened PRs in the date range
+    local all_prs_response
+    all_prs_response=$(api_call "/repos/${full_repo}/pulls?state=all")
+    local opened_prs=0
+    opened_prs=$(echo "$all_prs_response" | jq --arg since "$WEEK_AGO" --arg until "$NOW" 'if type == "array" then [.[] | select(.created_at >= $since and .created_at <= $until)] | length else 0 end' 2>/dev/null || echo 0)
+    
+    # Count commits in the date range
+    local commits_response
+    commits_response=$(api_call "/repos/${full_repo}/commits?since=${WEEK_AGO}&until=${NOW}")
+    local commits=0
+    commits=$(echo "$commits_response" | jq 'if type == "array" then length else 0 end' 2>/dev/null || echo 0)
+    
+    # Handle null/empty values
+    current_issues=${current_issues:-0}
+    opened_issues=${opened_issues:-0}
+    closed_issues=${closed_issues:-0}
+    merged_prs=${merged_prs:-0}
+    opened_prs=${opened_prs:-0}
+    commits=${commits:-0}
+    
+    # Return values as JSON for easy parsing
+    echo "{\"repo\":\"$full_repo\",\"current_issues\":$current_issues,\"opened_issues\":$opened_issues,\"closed_issues\":$closed_issues,\"opened_prs\":$opened_prs,\"merged_prs\":$merged_prs,\"commits\":$commits}"
 }
 
 # Get all repositories and filter by activity
@@ -614,6 +698,90 @@ if [ "$OUTPUT_FORMAT" = "markdown" ]; then
         report_content="${report_content}
 
 *Consider adding API delays or running during off-peak hours to avoid rate limits.*"
+    fi
+    
+    # Process external repositories if specified
+    if [ -n "$TRACK_EXTERNAL_REPOS" ]; then
+        echo ""
+        echo "Processing external repositories..."
+        
+        # Initialize external repo totals
+        ext_total_current_issues=0
+        ext_total_opened_issues=0
+        ext_total_closed_issues=0
+        ext_total_merged_prs=0
+        ext_total_commits=0
+        ext_total_opened_prs=0
+        ext_repos_with_activity=0
+        ext_report_content=""
+        
+        # Process each external repo
+        IFS=',' read -ra EXTERNAL_REPOS_ARRAY <<< "$TRACK_EXTERNAL_REPOS"
+        for full_repo in "${EXTERNAL_REPOS_ARRAY[@]}"; do
+            # Trim whitespace
+            full_repo=$(echo "$full_repo" | xargs)
+            
+            # Process the repo and get JSON result
+            repo_result=$(process_external_repo "$full_repo")
+            
+            # Parse JSON result
+            current_issues=$(echo "$repo_result" | jq -r '.current_issues')
+            opened_issues=$(echo "$repo_result" | jq -r '.opened_issues')
+            closed_issues=$(echo "$repo_result" | jq -r '.closed_issues')
+            opened_prs=$(echo "$repo_result" | jq -r '.opened_prs')
+            merged_prs=$(echo "$repo_result" | jq -r '.merged_prs')
+            commits=$(echo "$repo_result" | jq -r '.commits')
+            
+            # Add to totals
+            ext_total_current_issues=$((ext_total_current_issues + current_issues))
+            ext_total_opened_issues=$((ext_total_opened_issues + opened_issues))
+            ext_total_closed_issues=$((ext_total_closed_issues + closed_issues))
+            ext_total_merged_prs=$((ext_total_merged_prs + merged_prs))
+            ext_total_opened_prs=$((ext_total_opened_prs + opened_prs))
+            ext_total_commits=$((ext_total_commits + commits))
+            
+            # Only include repos with activity
+            if [ $((opened_issues + closed_issues + opened_prs + merged_prs + commits)) -gt 0 ]; then
+                ext_repos_with_activity=$((ext_repos_with_activity + 1))
+                
+                # Create GitHub search URLs
+                current_issues_url="https://github.com/${full_repo}/issues?q=is:issue+is:open"
+                opened_issues_url="https://github.com/${full_repo}/issues?q=is:issue+created:${start_display}..${end_display}"
+                closed_issues_url="https://github.com/${full_repo}/issues?q=is:issue+closed:${start_display}..${end_display}"
+                opened_prs_url="https://github.com/${full_repo}/pulls?q=is:pr+created:${start_display}..${end_display}"
+                merged_prs_url="https://github.com/${full_repo}/pulls?q=is:pr+merged:${start_display}..${end_display}"
+                commits_url="https://github.com/${full_repo}/commits?since=${start_display}&until=${end_display}"
+                
+                # Format metrics as clickable links if > 0
+                current_issues_display=$(format_metric "$current_issues" "$current_issues_url")
+                opened_issues_display=$(format_metric "$opened_issues" "$opened_issues_url")
+                closed_issues_display=$(format_metric "$closed_issues" "$closed_issues_url")
+                opened_prs_display=$(format_metric "$opened_prs" "$opened_prs_url")
+                merged_prs_display=$(format_metric "$merged_prs" "$merged_prs_url")
+                commits_display=$(format_metric "$commits" "$commits_url")
+                
+                ext_report_content="${ext_report_content}
+| $full_repo | $current_issues_display | $opened_issues_display | $closed_issues_display | $opened_prs_display | $merged_prs_display | $commits_display |"
+            else
+                echo "DEBUG: Skipping $full_repo from report (no activity: all metrics are zero)"
+            fi
+        done
+        
+        # Add external repos section if there's activity
+        if [ $ext_repos_with_activity -gt 0 ]; then
+            report_content="${report_content}
+
+## External Repositories
+
+| Repository | Current Issues | Opened Issues | Closed Issues | Opened PRs | Merged PRs | Commits |
+|------------|----------------|---------------|---------------|------------|------------|---------|${ext_report_content}
+|**Total**|**$ext_total_current_issues**|**$ext_total_opened_issues**|**$ext_total_closed_issues**|**$ext_total_opened_prs**|**$ext_total_merged_prs**|**$ext_total_commits**|"
+            
+            echo "DEBUG: External repositories with activity: $ext_repos_with_activity"
+            echo "DEBUG: External repos totals - Issues: $ext_total_opened_issues opened, $ext_total_closed_issues closed | PRs: $ext_total_opened_prs opened, $ext_total_merged_prs merged | Commits: $ext_total_commits"
+        else
+            echo "DEBUG: No external repository activity in date range"
+        fi
     fi
     
     report_content="${report_content}
